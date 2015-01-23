@@ -13,6 +13,7 @@ helpers.getTileNearby = function(board, distanceFromTop, distanceFromLeft, direc
   var fromTopNew = distanceFromTop;
   var fromLeftNew = distanceFromLeft;
 
+
   // This associates the cardinal directions with an X or Y coordinate
   if (direction === 'North') {
     fromTopNew -= 1;
@@ -199,6 +200,7 @@ helpers.findNearestHealthWell = function(gameData) {
   return pathInfoObject.direction;
 };
 
+
 // Returns the direction of the nearest enemy with lower health
 // (or returns false if there are no accessible enemies that fit this description)
 helpers.findNearestWeakerEnemy = function(gameData) {
@@ -214,6 +216,90 @@ helpers.findNearestWeakerEnemy = function(gameData) {
   //If no weaker enemy exists, will simply return undefined, which will
   //be interpreted as "Stay" by the game object
   return pathInfoObject.direction;
+};
+
+
+
+helpers.nextToHealth = function(board, currentTile){
+        function isHealth(tile){
+            return  tile && tile.type === 'HealthWell';
+        }
+
+        var y = currentTile.distanceFromTop;
+        var x = currentTile.distanceFromLeft;
+        var returnVal = false;
+
+        //Top
+        if(helpers.validCoordinates(board, y+1, x)){
+            returnVal = returnVal || isHealth(board.tiles[y+1][x]);
+        }
+
+        //Bottom
+        if(helpers.validCoordinates(board, y-1, x)){
+            returnVal = isHealth(board.tiles[y-1][x]) || returnVal;
+        }
+
+        //Left
+        if(helpers.validCoordinates(board, y, x - 1)){
+            returnVal = isHealth(board.tiles[y][x - 1]) || returnVal;
+        }
+
+        //Right
+        if(helpers.validCoordinates(board, y, x+1)){
+            returnVal = isHealth(board.tiles[y][x + 1]) || returnVal;
+        }
+       return returnVal;
+};
+
+var targetEnemy = null;
+helpers.findWeakestEnemy = function(gameData) {
+   // console.log('Hero', hero);
+    var hero = gameData.activeHero;
+    var board = gameData.board;
+    var numberOfEnemies = 0;
+    var lastEnemy = null;
+    var weakestEnemy = {
+      health : 10000000000
+    }
+
+
+   for(var i = 0; i < board.lengthOfSide; ++i){
+      for(var k = 0; k < board.lengthOfSide; ++ k){
+        var currentTile = board.tiles[i][k];
+        if(currentTile.type === 'Hero' && !currentTile.dead && hero.team  !==   currentTile.team ){
+          ++numberOfEnemies;
+          lastEnemy = currentTile;
+            // console.log('found enemy hero at:', currentTile);
+            if(currentTile.health < weakestEnemy.health){
+                //If the user is next to a health well, ignore them
+                if(!helpers.nextToHealth(board, currentTile)){
+                    weakestEnemy = currentTile;
+                }
+            }
+        }
+      }
+   }
+
+
+
+   if(targetEnemy === null || targetEnemy.dead) {
+      targetEnemy = weakestEnemy;
+   }
+
+
+   if(numberOfEnemies === 1){
+      targetEnemy = lastEnemy;
+   }
+
+   var pathInfoObject = helpers.findNearestObjectDirectionAndDistance(board, hero, function(tile){
+      return tile.id === targetEnemy.id;
+   });
+
+   if(pathInfoObject.direction === undefined || hero.health < 70 && numberOfEnemies !== 1){
+    return helpers.findNearestHealthWell(gameData);
+   }
+
+   return pathInfoObject.direction;
 };
 
 // Returns the direction of the nearest enemy

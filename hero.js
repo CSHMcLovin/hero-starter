@@ -176,11 +176,15 @@ var moves = {
   // This hero will try really hard not to die.
   coward : function(gameData, helpers) {
     return helpers.findNearestHealthWell(gameData);
+  },
+
+  opportunisticAssassin : function(gameData, helpers){
+    return helpers.findWeakestEnemy(gameData);
   }
  };
 
 //  Set our heros strategy
-var  move =  moves.aggressor;
+var  move =  moves.opportunisticAssassin;
 
 // Export the move function here
 module.exports = move;
